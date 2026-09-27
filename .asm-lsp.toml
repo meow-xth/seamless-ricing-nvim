@@ -1,0 +1,14 @@
+[server]
+# Assembly syntax: "nasm", "gas", "masm", "fasm", "tasm"
+syntax = "nasm"
+
+[diagnostics]
+# Enable/disable diagnostics
+enable = true
+
+# Show warnings for unused labels
+unused_labels = true
+
+[formatting]
+# Enable formatting
+enable = true
