@@ -398,3 +398,4 @@ MIT License - see [LICENSE](LICENSE) file.
 - [NvChad](https://github.com/NvChad/NvChad) - Base configuration
 - [LazyVim](https://github.com/LazyVim/LazyVim) - Inspiration for starter structure
 - All plugin authors listed in `lua/plugins/init.lua`
+# seamless-ricing-nvim
