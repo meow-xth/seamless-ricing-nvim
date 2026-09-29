@@ -70,6 +70,21 @@ local function apply_highlights()
   pcall(vim.api.nvim_set_hl, 0, "DiagnosticInfo", { fg = "#7dcfff", default = true })
 end
 
+-- ===== 3. nvim-notify: minimal, load on demand =====
+local function setup_notify()
+  local notify = require "notify"
+  notify.setup {
+    render = "minimal",
+    stages = "static",
+    timeout = 2000,
+    top_down = false,
+    max_width = 60,
+    max_height = 10,
+    background_colour = "#1a1b26",
+  }
+  vim.notify = notify
+end
+
 function M.setup()
   local group = vim.api.nvim_create_augroup(AUGROUP, { clear = true })
 
@@ -79,6 +94,12 @@ function M.setup()
   })
 
   apply_highlights()
+
+  -- Lazy-load nvim-notify on first vim.notify call
+  vim.notify = function(msg, level, opts_)
+    setup_notify()
+    return vim.notify(msg, level, opts_)
+  end
 end
 
 return M

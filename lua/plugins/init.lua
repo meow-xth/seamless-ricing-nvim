@@ -21,7 +21,7 @@ return {
 
   {
     "wakatime/vim-wakatime",
-    lazy = false,
+    event = "VeryLazy",
     config = function() end,
   },
 
@@ -60,6 +60,14 @@ return {
         "nasm",
       },
     },
+    config = function(_, opts)
+      require("nvim-treesitter.configs").setup(opts)
+      -- Defer parser installation to avoid blocking startup
+      vim.defer_fn(function()
+        local ts = require "nvim-treesitter"
+        ts.install(opts.ensure_installed):wait(30000)
+      end, 0)
+    end,
   },
 
   -- ===== Chunk highlights (animated scope borders) =====
@@ -82,8 +90,8 @@ return {
             left_bottom = "╰",
             right_arrow = "->",
           },
-          duration = 200,
-          delay = 100,
+          duration = 0,
+          delay = 0,
         },
         indent = { enable = false },
         line_num = { enable = true },
@@ -197,7 +205,7 @@ return {
       transparency = 10,
       shadow_blend = 36,
       shadow_guibg = "Black",
-      timer_interval = 200,
+      timer_interval = 500,
       toggle_key = "<C-k>",
       select_signature_key = "<C-n>",
       move_cursor_key = "<C-p>",

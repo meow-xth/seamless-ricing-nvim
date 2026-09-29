@@ -6,103 +6,10 @@
 local M = {}
 
 M.base46 = {
-	theme = "gruvbox",
-
-	hl_override = {
-		Comment = { italic = true },
-		["@comment"] = { italic = true },
-
-		-- Variables
-		["@variable"] = { fg = "#c0caf5" },
-		["@variable.builtin"] = { fg = "#f7768e", bold = true },
-		["@variable.parameter"] = { fg = "#e0af68", italic = true },
-		["@variable.member"] = { fg = "#7dcfff" },
-
-		-- Functions
-		["@function"] = { fg = "#7aa2f7", bold = true },
-		["@function.builtin"] = { fg = "#bb9af7", bold = true },
-		["@function.call"] = { fg = "#7aa2f7" },
-		["@function.method"] = { fg = "#7aa2f7", bold = true },
-		["@function.method.call"] = { fg = "#7aa2f7" },
-
-		-- Types
-		["@type"] = { fg = "#2ac3de", bold = true },
-		["@type.builtin"] = { fg = "#2ac3de", bold = true, italic = true },
-		["@type.definition"] = { fg = "#2ac3de", bold = true },
-		["@type.qualifier"] = { fg = "#f7768e", italic = true },
-
-		-- Constants
-		["@constant"] = { fg = "#ff9e64", bold = true },
-		["@constant.builtin"] = { fg = "#ff9e64", bold = true },
-		["@constant.macro"] = { fg = "#ff9e64" },
-
-		-- Keywords
-		["@keyword"] = { fg = "#bb9af7", bold = true, italic = true },
-		["@keyword.function"] = { fg = "#bb9af7", bold = true },
-		["@keyword.operator"] = { fg = "#bb9af7", bold = true },
-		["@keyword.return"] = { fg = "#bb9af7", bold = true, italic = true },
-		["@keyword.conditional"] = { fg = "#bb9af7", bold = true, italic = true },
-		["@keyword.repeat"] = { fg = "#bb9af7", bold = true, italic = true },
-		["@keyword.import"] = { fg = "#bb9af7", italic = true },
-
-		-- Operators
-		["@operator"] = { fg = "#89ddff", bold = true },
-
-		-- Strings
-		["@string"] = { fg = "#9ece6a" },
-		["@string.escape"] = { fg = "#f7768e", bold = true },
-		["@string.regex"] = { fg = "#b4f9f8" },
-
-		-- Numbers
-		["@number"] = { fg = "#ff9e64" },
-		["@number.float"] = { fg = "#ff9e64" },
-
-		-- Properties/Fields
-		["@property"] = { fg = "#7dcfff" },
-		["@field"] = { fg = "#7dcfff" },
-
-		-- Parameters
-		["@parameter"] = { fg = "#e0af68", italic = true },
-
-		-- Namespaces/Modules
-		["@module"] = { fg = "#7aa2f7", italic = true },
-		["@namespace"] = { fg = "#7aa2f7", italic = true },
-
-		-- Attributes/Annotations
-		["@attribute"] = { fg = "#bb9af7", italic = true },
-		["@decorator"] = { fg = "#bb9af7", italic = true },
-
-		-- Preprocessor
-		["@preproc"] = { fg = "#f7768e" },
-		["@define"] = { fg = "#f7768e" },
-
-		-- Tags (JSX/HTML)
-		["@tag"] = { fg = "#f7768e" },
-		["@tag.attribute"] = { fg = "#7dcfff" },
-		["@tag.delimiter"] = { fg = "#545c7e" },
-
-		-- LSP semantic tokens
-		["@lsp.type.variable"] = { link = "@variable" },
-		["@lsp.type.function"] = { link = "@function" },
-		["@lsp.type.method"] = { link = "@function.method" },
-		["@lsp.type.class"] = { link = "@type" },
-		["@lsp.type.struct"] = { link = "@type" },
-		["@lsp.type.interface"] = { link = "@type" },
-		["@lsp.type.enum"] = { link = "@type" },
-		["@lsp.type.enumMember"] = { link = "@constant" },
-		["@lsp.type.parameter"] = { link = "@parameter" },
-		["@lsp.type.property"] = { link = "@property" },
-		["@lsp.type.namespace"] = { link = "@namespace" },
-		["@lsp.type.typeParameter"] = { link = "@type.definition" },
-		["@lsp.type.macro"] = { link = "@constant.macro" },
-		["@lsp.mod.readonly"] = { italic = true },
-		["@lsp.mod.static"] = { bold = true },
-		["@lsp.mod.declaration"] = { bold = true },
-		["@lsp.mod.definition"] = { bold = true },
-	},
+	theme = "bearded-arc",
 }
 
-M.nvdash = { load_on_startup = true }
+M.nvdash = { load_on_startup = false }
 M.ui = {
   telescope = { style = "bordered" }, -- konsisten dgn float rounded
   tabufline = {
@@ -153,16 +60,19 @@ M.ui = {
         return ("%%#DiagnosticError# ✗ exit %d "):format(last.code)
       end,
 
-      -- performance: startup time + plugin count
+      -- performance: startup time + plugin count (cached, updated on events)
       perf = function()
-        local ok, perf = pcall(require, "configs.performance")
-        if not ok then
-          return ""
+        if not vim.g._perf_cached then
+          local ok, perf = pcall(require, "configs.performance")
+          if not ok then
+            return ""
+          end
+          local time = perf.get_startup_time()
+          local lazy_stats = perf.get_lazy_stats()
+          local plugin_str = lazy_stats and string.format("%d/%d", lazy_stats.loaded, lazy_stats.count) or "?"
+          vim.g._perf_cached = string.format("%%#St_EmptySpace#⚡ %dms %%#St_sep_l#\u{e0b4}%%#St_EmptySpace#📦 %s ", time, plugin_str)
         end
-        local time = perf.get_startup_time()
-        local lazy_stats = perf.get_lazy_stats()
-        local plugin_str = lazy_stats and string.format("%d/%d", lazy_stats.loaded, lazy_stats.count) or "?"
-        return ("%%#St_EmptySpace#⚡ %dms %%#St_sep_l#\u{e0b4}%%#St_EmptySpace#📦 %s "):format(time, plugin_str)
+        return vim.g._perf_cached
       end,
     },
   },

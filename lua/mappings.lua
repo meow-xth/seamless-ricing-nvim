@@ -12,21 +12,57 @@ map("n", "<leader>w", "<cmd>write<cr>", { desc = "Write file" })
 map({ "n", "i", "v" }, "<C-s>", "<cmd>write<cr>", { desc = "Write file" })
 map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "Clear search highlight" })
 
--- Non-blocking <Esc> from insert mode: only leaves insert mode when "j" is not
--- followed by another "k" within `timeout`. A plain `map("i", "jk", "<Esc>")`
--- swallows the two characters even when you meant to type them.
+-- Non-blocking <Esc> from insert mode: "j" is inserted right away (it never
+-- waits for the next key), but if "k" follows within `jk_timeout` ms the "j"
+-- that was just typed is removed and insert mode is left. A plain
+-- `map("i", "jk", "<Esc>")` holds "j" in the typeahead until `timeoutlen`
+-- expires, so the character only shows up after a delay.
+local jk_timeout = 250
 local jk_pending = false
-map("i", "j", function()
-  if jk_pending then
-    jk_pending = false
-    return "jk"
-  end
+local jk_gen = 0
+
+local function jk_arm()
   jk_pending = true
+  jk_gen = jk_gen + 1
+  local gen = jk_gen
   vim.defer_fn(function()
-    jk_pending = false
-  end, 250)
+    if gen == jk_gen then
+      jk_pending = false
+    end
+  end, jk_timeout)
+end
+
+local function jk_disarm()
+  jk_pending = false
+  jk_gen = jk_gen + 1
+end
+
+-- These are non-<expr>-remapped mappings, so the keys the callbacks return are
+-- used as typed and never re-enter these same mappings.
+map("i", "j", function()
+  jk_arm()
   return "j"
-end, { desc = "jk to escape (non-blocking)" })
+end, { expr = true, desc = "insert j (arms jk to escape)" })
+
+map("i", "k", function()
+  if not jk_pending then
+    return "k"
+  end
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local line = vim.api.nvim_get_current_line()
+  -- Only swallow the "j" when it really is the character right before the
+  -- cursor; anything typed in between must stay untouched.
+  if cursor[2] < 1 or line:sub(cursor[2], cursor[2]) ~= "j" then
+    jk_disarm()
+    return "k"
+  end
+  jk_disarm()
+  return "<Left><Del><Esc>"
+end, { expr = true, desc = "k after j (within 250ms) escapes insert mode" })
+
+-- Leaving insert mode by any other means must not leave the escape armed.
+local jk_group = vim.api.nvim_create_augroup("jk_escape", { clear = true })
+vim.api.nvim_create_autocmd("InsertLeave", { group = jk_group, callback = jk_disarm })
 map("i", "<C-[>", "<Esc>", { desc = "Escape insert mode" })
 map("i", "<C-c>", "<Esc>", { desc = "Abort insert mode" })
 

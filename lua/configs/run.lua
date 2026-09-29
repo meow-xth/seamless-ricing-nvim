@@ -22,30 +22,30 @@ local function uses_stdin()
   local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), " ")
 
   if ft == "python" then
-    return text:find("input%s*%(") ~= nil
+    return text:find "input%s*%(" ~= nil
   end
 
   if ft == "lua" then
-    return text:find("io%.read") ~= nil
+    return text:find "io%.read" ~= nil
   end
 
   if ft == "go" then
-    return text:find("Scan") ~= nil
+    return text:find "Scan" ~= nil
   end
 
   if ft == "rust" then
-    return text:find("read_line") ~= nil or text:find("stdin%s*%(") ~= nil
+    return text:find "read_line" ~= nil or text:find "stdin%s*%(" ~= nil
   end
 
   if ft == "sh" or ft == "bash" then
-    return text:find("%f[%w_]read%f[^%w_]") ~= nil
+    return text:find "%f[%w_]read%f[^%w_]" ~= nil
   end
 
-  return text:find("%f[%w_]cin%f[^%w_]") ~= nil
-    or text:find("getline") ~= nil
-    or text:find("scanf") ~= nil
-    or text:find("getchar") ~= nil
-    or text:find("fgets") ~= nil
+  return text:find "%f[%w_]cin%f[^%w_]" ~= nil
+    or text:find "getline" ~= nil
+    or text:find "scanf" ~= nil
+    or text:find "getchar" ~= nil
+    or text:find "fgets" ~= nil
 end
 
 local function io_redirect()
@@ -55,7 +55,7 @@ end
 -- benar-benar meng-#include header lokal (dir punya file itu)? -> perlu link file sekawan
 local function has_local_include(dir)
   local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), " ")
-  for inc in text:gmatch('#%s*include%s+"([^"]+)"') do
+  for inc in text:gmatch '#%s*include%s+"([^"]+)"' do
     if vim.fn.filereadable(dir .. "/" .. inc) == 1 then
       return true
     end
@@ -75,7 +75,7 @@ local function sibling_sources(dir, kind)
   end
   local out = {}
   for name in vim.fs.dir(dir) do
-    local e = name:match("%.[^.]+$")
+    local e = name:match "%.[^.]+$"
     for _, x in ipairs(exts) do
       if e == x then
         out[#out + 1] = dir .. "/" .. name
@@ -89,8 +89,8 @@ end
 
 function M.build_command()
   local ft = vim.bo.filetype
-  local file = vim.fn.expand("%:p")
-  local dir = vim.fn.expand("%:p:h")
+  local file = vim.fn.expand "%:p"
+  local dir = vim.fn.expand "%:p:h"
 
   if file == "" or file == vim.fn.getcwd() then
     return nil, "File belum disimpan. Simpan dulu lalu tekan <leader>r"
@@ -108,8 +108,14 @@ function M.build_command()
     local out = "/tmp/nvim-run-" .. vim.fn.fnamemodify(file, ":t")
     local srcs = has_local_include(dir) and sibling_sources(dir, "cpp") or { file }
     local srcstr = table.concat(vim.tbl_map(shq, srcs), " ")
-    local cmd = ("cd %s && %s -std=c++20 -Wall -Wextra -O2 -o %s %s && %s%s")
-      :format(shq(dir), compiler, shq(out), srcstr, shq(out), io_redirect())
+    local cmd = ("cd %s && %s -std=c++20 -Wall -Wextra -O2 -o %s %s && %s%s"):format(
+      shq(dir),
+      compiler,
+      shq(out),
+      srcstr,
+      shq(out),
+      io_redirect()
+    )
     return cmd
   end
 
@@ -121,8 +127,14 @@ function M.build_command()
     local out = "/tmp/nvim-run-" .. vim.fn.fnamemodify(file, ":t")
     local srcs = has_local_include(dir) and sibling_sources(dir, "c") or { file }
     local srcstr = table.concat(vim.tbl_map(shq, srcs), " ")
-    local cmd = ("cd %s && %s -std=c17 -Wall -Wextra -O2 -o %s %s && %s%s")
-      :format(shq(dir), compiler, shq(out), srcstr, shq(out), io_redirect())
+    local cmd = ("cd %s && %s -std=c17 -Wall -Wextra -O2 -o %s %s && %s%s"):format(
+      shq(dir),
+      compiler,
+      shq(out),
+      srcstr,
+      shq(out),
+      io_redirect()
+    )
     return cmd
   end
 
@@ -163,8 +175,7 @@ function M.build_command()
       return nil, "Compiler Rust (rustc/cargo) tidak ditemukan"
     end
     local out = "/tmp/nvim-run-" .. vim.fn.fnamemodify(file, ":t")
-    return ("cd %s && %s -O -o %s %s && %s%s")
-      :format(shq(dir), rustc, shq(out), shq(file), shq(out), io_redirect())
+    return ("cd %s && %s -O -o %s %s && %s%s"):format(shq(dir), rustc, shq(out), shq(file), shq(out), io_redirect())
   end
 
   return nil, "Belum ada runner untuk filetype: " .. ft
@@ -194,17 +205,21 @@ local function spin_start(win, name)
   spin_stop()
   local timer = vim.uv.new_timer()
   spin.timer = timer
-  timer:start(0, 100, vim.schedule_wrap(function()
-    if not (win and vim.api.nvim_win_is_valid(win)) then
-      spin_stop()
-      return
-    end
-    spin.i = spin.i % #spin_frames + 1
-    pcall(vim.api.nvim_win_set_config, win, {
-      title = (" %s %s · running… "):format(spin_frames[spin.i], name),
-      title_pos = "center",
-    })
-  end))
+  timer:start(
+    0,
+    100,
+    vim.schedule_wrap(function()
+      if not (win and vim.api.nvim_win_is_valid(win)) then
+        spin_stop()
+        return
+      end
+      spin.i = spin.i % #spin_frames + 1
+      pcall(vim.api.nvim_win_set_config, win, {
+        title = (" %s %s · running… "):format(spin_frames[spin.i], name),
+        title_pos = "center",
+      })
+    end)
+  )
 end
 
 local function close_run()
@@ -268,13 +283,16 @@ end
 -- dipisah biar gampang dites tanpa buka UI.
 function M.build_wrapped(cmd, name)
   local safe = name:gsub("'", "'\\''")
-  return "printf '\\n── 󰜎 " .. safe .. " ──\\n\\n' ; "
+  return "printf '\\n── 󰜎 "
+    .. safe
+    .. " ──\\n\\n' ; "
     .. "t0=$(date +%s%N 2>/dev/null || echo 0) ; "
-    .. cmd .. " ; rc=$? ; "
+    .. cmd
+    .. " ; rc=$? ; "
     .. "t1=$(date +%s%N 2>/dev/null || echo 0) ; ms=$(( (t1 - t0) / 1000000 )) ; "
-    .. "secs=$(awk -v ms=\"$ms\" 'BEGIN { printf \"%.2fs\", (ms < 0 ? 0 : ms) / 1000 }') ; "
+    .. 'secs=$(awk -v ms="$ms" \'BEGIN { printf "%.2fs", (ms < 0 ? 0 : ms) / 1000 }\') ; '
     .. "if [ \"$rc\" -eq 0 ]; then c=32; mark='✓'; else c=31; mark='✗'; fi ; "
-    .. "printf '\\n── \\033[%sm%s exit: %s · %s\\033[0m ──\\n' \"$c\" \"$mark\" \"$rc\" \"$secs\""
+    .. 'printf \'\\n── \\033[%sm%s exit: %s · %s\\033[0m ──\\n\' "$c" "$mark" "$rc" "$secs"'
 end
 
 function M.run()

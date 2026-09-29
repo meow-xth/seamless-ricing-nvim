@@ -20,6 +20,19 @@ vim.api.nvim_create_autocmd("UIEnter", {
   group = group,
   callback = function()
     vim.g.ui_entered = true
+    -- Load highlight overrides after UI is ready (avoids blocking startup)
+    vim.schedule(function()
+      pcall(dofile, vim.fn.stdpath "config" .. "/lua/hl_override.lua")
+    end)
+  end,
+})
+
+-- Invalidate statusline perf cache when plugins finish loading
+vim.api.nvim_create_autocmd("User", {
+  group = group,
+  pattern = "LazyDone",
+  callback = function()
+    vim.g._perf_cached = nil
   end,
 })
 
